@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<header>
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.13.0/mapbox-gl.css'
+          rel='stylesheet' />
+    <title>BeeBee heatmap</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        h2,
+        h3 {
+            margin: 10px;
+            font-size: 18px;
+        }
+
+        h3 {
+            font-size: 16px;
+        }
+
+        p {
+            margin: 10px;
+        }
+
+        /**
+        * Create a position for the map
+        * on the page */
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 100%;
+        }
+
+        /**
+        * Set rules for how the map overlays
+        * (information box and legend) will be displayed
+        * on the page. */
+        .map-overlay {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #fff;
+            margin-right: 20px;
+            font-family: Arial, sans-serif;
+            overflow: auto;
+            border-radius: 3px;
+        }
+
+        #features {
+            top: 0;
+            height: 43px;
+            margin-top: 20px;
+            width: 250px;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50vh;
+            left: 50vw;
+        }
+
+        .reload {
+            position: absolute;
+            top: 10;
+            left: 10;
+        }
+
+        /*Spinner*/
+        .lds-ripple {
+            display: inline-block;
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .lds-ripple div {
+            position: absolute;
+            border: 4px solid #484848;
+            opacity: 1;
+            border-radius: 50%;
+            animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+        }
+
+        .lds-ripple div:nth-child(2) {
+            animation-delay: -0.5s;
+        }
+
+        @keyframes lds-ripple {
+            0% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+
+            4.9% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 0;
+            }
+
+            5% {
+                top: 36px;
+                left: 36px;
+                width: 0;
+                height: 0;
+                opacity: 1;
+            }
+
+            100% {
+                top: 0px;
+                left: 0px;
+                width: 72px;
+                height: 72px;
+                opacity: 0;
+            }
+        }
+
+        .legend {
+            background-color: #fff;
+            border-radius: 3px;
+            bottom: 30px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+            padding: 10px;
+            position: absolute;
+            right: 10px;
+            z-index: 1;
+        }
+
+        .legend div span {
+            border-radius: 50%;
+            display: inline-block;
+            height: 10px;
+            margin-right: 5px;
+            width: 10px;
+        }
+    </style>
+</header>
+
+<body>
+    <div id='map'></div>
+    <div class='map-overlay'
+         id='features'>
+        <h2>BeeBee drivers density</h2>
+        <!-- <div id='pd'>
+            <p>Hover over a state!</p>
+        </div> -->
+    </div>
+    <div id="loading"
+         style="display: none;">
+        <div class="lds-ripple">
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+    <div class='map-overlay legend'
+         style="display:none;"
+         id='legend'>
+    </div>
+    <div class="reload">
+        <div class="drivers">
+            <input id="driver-resolution"
+                   type="number"
+                   value="8">
+            <button id="driver-reload">Reload Driver</button>
+        </div>
+        <br />
+        <div class="orders">
+            <input id="order-resolution"
+                   type="number"
+                   value="8">
+            <button id="order-reload">Reload Order</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.4.2/chroma.min.js"
+            integrity="sha512-zInFF17qBFVvvvFpIfeBzo7Tj7+rQxLeTJDmbxjBz5/zIr89YVbTNelNhdTT+/DCrxoVzBeUPVFJsczKbB7sew=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <script type="application/javascript">
+        mapboxgl.accessToken = '<mapbox-token>';
+
+        const map = new mapboxgl.Map({
+            container: 'map', // container id
+            center: [-40.30720, -20.29520],
+            zoom: 11,
+            style: 'mapbox://styles/vizeke/clf13jh5y000901nx4t3b2ghz' // replace this with your style URL
+        });
+
+        let _chroma = chroma.scale(['#2a8d08', '#f2e713', '#f71e06']);
+
+        let _layers = [];
+        let _sources = [];
+
+        document.getElementById("driver-reload")
+            .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
+        document.getElementById("driver-resolution")
+            .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
+        document.getElementById("order-reload")
+            .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
+        document.getElementById("order-resolution")
+            .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
+
+        map.on('load', () => {
+            // the rest of the code will go in here
+            map.getCanvas().style.cursor = 'default';
+        });
+
+        const getHeatMapLayerColor = (count, maxCount) => _chroma(Math.log(count)).hex();
+
+        function getStandardDeviation(array) {
+            const n = array.length
+            const mean = array.reduce((a, b) => a + b) / n
+            return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
+        }
+
+        // Add a data source containing GeoJSON data.
+        const addPolygonSource = (map, sourceName, coordinates) =>
+            map.addSource(sourceName, {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Polygon',
+                        // These coordinates outline Maine.
+                        'coordinates': coordinates
+                    }
+                }
+            });
+
+        // Add a data source containing GeoJSON data.
+        const addMultiPolygonSource = (map, name, features) => {
+            const source = map.getSource(name);
+            if (source) {
+                map.removeSource(name);
+            }
+
+            const geoJson = {
+                'type': 'geojson',
+                'data': {
+                    'type': 'FeatureCollection',
+                    'features': [],
+                }
+            }
+
+            for (const key in features) {
+                const boundary = features[key].Boundary.map(f => [f.Lng, f.Lat])
+
+                geoJson.data.features.push({
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Polygon',
+                        'coordinates': [boundary]
+                    },
+                    'properties': {
+                        'name': key
+                    }
+                });
+            }
+
+            _sources.push(name);
+            return map.addSource(name, geoJson);
+        }
+
+        const createLegendItem = (count) => {
+            var legendItem = document.createElement("div");
+            var legendItemSpan = document.createElement("span");
+            legendItemSpan.style.backgroundColor = _chroma(Math.log(count)).alpha(0.5).css();
+            legendItem.appendChild(legendItemSpan);
+            legendItem.appendChild(document.createTextNode(count));
+            document.getElementById('legend').appendChild(legendItem)
+        }
+
+        const createLegend = (heatmap) => {
+            var legend = document.getElementById('legend');
+            legend.innerHTML = "";
+
+            var legendTitle = document.createElement("div");
+            var legendTitleText = document.createElement("strong");
+            legendTitleText.appendChild(document.createTextNode("Item count"));
+            legendTitle.appendChild(legendTitleText);
+            legend.appendChild(legendTitle);
+
+            const keys = Object.keys(heatmap);
+            const n = Math.trunc((keys.length) / 5);
+            let i = 0;
+            while (i < keys.length) {
+                createLegendItem(keys[i]);
+                i += n;
+            }
+            if ((i + 1 - n) < keys.length) {
+                createLegendItem(keys[keys.length - 1]);
+            }
+        }
+
+        const updateMap = (entity, resolution) => {
+            const legend = document.getElementById("legend");
+            const loading = document.getElementById("loading");
+            loading.style.display = "block";
+
+            fetch(`http://localhost:8000/${entity}/${resolution}`)
+                .then((response) => {
+                    loading.style.display = "none";
+                    legend.style.display = "block";
+
+                    _layers.forEach((layer) => map.removeLayer(layer));
+                    _sources.forEach((source) => map.removeSource(source));
+                    _layers = [];
+                    _sources = [];
+
+                    response.json().then((data) => {
+                        const sourcePrefix = "driver-locations";
+                        const maxCount = data.MaxCount;
+
+                        // Update chroma boundaries
+                        _chroma = _chroma.domain([0, Math.log(maxCount)]);
+
+                        createLegend(data.HeatMap);
+
+                        for (const id in data.HeatMap) {
+                            const sourceId = `${sourcePrefix}-${id}`;
+                            const layer = map.getLayer(sourceId);
+                            if (layer) {
+                                map.removeLayer(sourceId);
+                            }
+
+                            addMultiPolygonSource(map, sourceId, data.HeatMap[id])
+
+                            // Add a new layer to visualize the polygon.
+                            _layers.push(sourceId);
+                            map.addLayer({
+                                'id': sourceId,
+                                'type': 'fill',
+                                'source': sourceId, // reference the data source
+                                'layout': {},
+                                'paint': {
+                                    'fill-color': getHeatMapLayerColor(id, maxCount), // blue color fill
+                                    'fill-opacity': 0.5
+                                }
+                            });
+                        }
+                    });
+                })
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,13 @@
+github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+github.com/lib/pq v1.10.7 h1:p7ZhMD+KsSRozJr34udlUrhboJwWAgCg34+/ZZNvZZw=
+github.com/lib/pq v1.10.7/go.mod h1:AlVN5x4E4T544tWzH6hKfbfQvm3HdbOxrmggDNAPY9o=
+github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/rs/cors v1.8.3 h1:O+qNyWn7Z+F9M0ILBHgMVPuB1xTOucVd5gtaYyXBpRo=
+github.com/rs/cors v1.8.3/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
+github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
+github.com/uber/h3-go/v4 v4.0.1 h1:eOcQXs+eC9Vmil0ZWicPYwSVfgwkPlMyk6Udm/kdv8w=
+github.com/uber/h3-go/v4 v4.0.1/go.mod h1:VDpXVn4NLetBoISLEbiTVNstwW00bhHolV8I+jx9G+4=
+hawx.me/code/route v1.1.2 h1:qDCYLuCc2J6DmIT7KqNfIkJf+V0rx6bphP/4iwtK5PM=
+hawx.me/code/route v1.1.2/go.mod h1:SKWPgx9IKsK2Yy66xj1bSRBOTMwR6kFQcLMjgajaeAc=
