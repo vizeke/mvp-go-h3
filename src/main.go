@@ -6,6 +6,7 @@ import (
 	"log"
 	"mvp-beebee-h3/src/config"
 	"mvp-beebee-h3/src/db"
+	"mvp-beebee-h3/src/info"
 	"net/http"
 	"strconv"
 	"time"
@@ -16,37 +17,7 @@ import (
 )
 
 func main() {
-	// Tests
-	latLng := h3.NewLatLng(37.775938728915946, -122.41795063018799)
-	resolution := 6 // between 0 (biggest cell) and 15 (smallest cell)
-
-	cell := h3.LatLngToCell(latLng, resolution)
-	center := h3.CellToLatLng(cell)
-	bound := h3.CellToBoundary(cell)
-	res := cell.Resolution()
-	cellNumber := cell.BaseCellNumber()
-	strCell := cell.String()
-	uIntCell := h3.IndexFromString(strCell)
-
-	icosahedrons := cell.IcosahedronFaces()
-
-	neighbors2 := cell.GridDisk(2)
-	distances2 := cell.GridDiskDistances(2)
-
-	fmt.Println(cell)
-	fmt.Println(center)
-	fmt.Println(bound)
-	fmt.Println(res)
-	fmt.Println(cellNumber)
-	fmt.Println(strCell)
-	fmt.Println(uIntCell)
-	fmt.Println(cell.IsValid())
-	fmt.Println(icosahedrons)
-	fmt.Println(neighbors2)
-	fmt.Println(len(neighbors2))
-	fmt.Println(distances2)
-	// Output:
-	// 8928308280fffff
+	info.PrintCountTable()
 
 	route.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
