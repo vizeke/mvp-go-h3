@@ -151,9 +151,6 @@
     <div class='map-overlay'
          id='features'>
         <h2>BeeBee drivers density</h2>
-        <!-- <div id='pd'>
-            <p>Hover over a state!</p>
-        </div> -->
     </div>
     <div id="loading"
          style="display: none;">
@@ -188,170 +185,153 @@
             referrerpolicy="no-referrer"></script>
 
     <script type="application/javascript">
-        mapboxgl.accessToken = '<mapbox-token>';
+        fetch("env")
+            .then((response) => response.json())
+            .then((configs) => {
+                mapboxgl.accessToken = configs.MapboxToken;
 
-        const map = new mapboxgl.Map({
-            container: 'map', // container id
-            center: [-40.30720, -20.29520],
-            zoom: 11,
-            style: 'mapbox://styles/vizeke/clf13jh5y000901nx4t3b2ghz' // replace this with your style URL
-        });
+                const map = new mapboxgl.Map({
+                    container: 'map', // container id
+                    center: [-40.30720, -20.29520],
+                    zoom: 11,
+                    style: 'mapbox://styles/vizeke/clf13jh5y000901nx4t3b2ghz' // replace this with your style URL
+                });
 
-        let _chroma = chroma.scale(['#2a8d08', '#f2e713', '#f71e06']);
+                let _chroma = chroma.scale(['#2a8d08', '#f2e713', '#f71e06']);
 
-        let _layers = [];
-        let _sources = [];
+                let _layers = [];
+                let _sources = [];
 
-        document.getElementById("driver-reload")
-            .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
-        document.getElementById("driver-resolution")
-            .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
-        document.getElementById("order-reload")
-            .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
-        document.getElementById("order-resolution")
-            .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
+                document.getElementById("driver-reload")
+                    .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
+                document.getElementById("driver-resolution")
+                    .addEventListener("click", () => updateMap('drivers', document.getElementById("driver-resolution").value));
+                document.getElementById("order-reload")
+                    .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
+                document.getElementById("order-resolution")
+                    .addEventListener("click", () => updateMap('orders', document.getElementById("order-resolution").value));
 
-        map.on('load', () => {
-            // the rest of the code will go in here
-            map.getCanvas().style.cursor = 'default';
-        });
+                map.on('load', () => {
+                    // the rest of the code will go in here
+                    map.getCanvas().style.cursor = 'default';
+                });
 
-        const getHeatMapLayerColor = (count, maxCount) => _chroma(Math.log(count)).hex();
+                const getHeatMapLayerColor = (count, maxCount) => _chroma(Math.log(count)).hex();
 
-        function getStandardDeviation(array) {
-            const n = array.length
-            const mean = array.reduce((a, b) => a + b) / n
-            return Math.sqrt(array.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n)
-        }
-
-        // Add a data source containing GeoJSON data.
-        const addPolygonSource = (map, sourceName, coordinates) =>
-            map.addSource(sourceName, {
-                'type': 'geojson',
-                'data': {
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Polygon',
-                        // These coordinates outline Maine.
-                        'coordinates': coordinates
+                // Add a data source containing GeoJSON data.
+                const addMultiPolygonSource = (map, name, features) => {
+                    const source = map.getSource(name);
+                    if (source) {
+                        map.removeSource(name);
                     }
+
+                    const geoJson = {
+                        'type': 'geojson',
+                        'data': {
+                            'type': 'FeatureCollection',
+                            'features': [],
+                        }
+                    }
+
+                    for (const key in features) {
+                        const boundary = features[key].Boundary.map(f => [f.Lng, f.Lat])
+
+                        geoJson.data.features.push({
+                            'type': 'Feature',
+                            'geometry': {
+                                'type': 'Polygon',
+                                'coordinates': [boundary]
+                            },
+                            'properties': {
+                                'name': key
+                            }
+                        });
+                    }
+
+                    _sources.push(name);
+                    return map.addSource(name, geoJson);
+                }
+
+                const createLegendItem = (count) => {
+                    var legendItem = document.createElement("div");
+                    var legendItemSpan = document.createElement("span");
+                    legendItemSpan.style.backgroundColor = _chroma(Math.log(count)).alpha(0.5).css();
+                    legendItem.appendChild(legendItemSpan);
+                    legendItem.appendChild(document.createTextNode(count));
+                    document.getElementById('legend').appendChild(legendItem)
+                }
+
+                const createLegend = (heatmap) => {
+                    var legend = document.getElementById('legend');
+                    legend.innerHTML = "";
+
+                    var legendTitle = document.createElement("div");
+                    var legendTitleText = document.createElement("strong");
+                    legendTitleText.appendChild(document.createTextNode("Item count"));
+                    legendTitle.appendChild(legendTitleText);
+                    legend.appendChild(legendTitle);
+
+                    const keys = Object.keys(heatmap);
+                    const n = Math.trunc((keys.length) / 5);
+                    let i = 0;
+                    while (i < keys.length) {
+                        createLegendItem(keys[i]);
+                        i += n;
+                    }
+                    if ((i + 1 - n) < keys.length) {
+                        createLegendItem(keys[keys.length - 1]);
+                    }
+                }
+
+                const updateMap = (entity, resolution) => {
+                    const legend = document.getElementById("legend");
+                    const loading = document.getElementById("loading");
+                    loading.style.display = "block";
+
+                    fetch(`http://localhost:8000/${entity}/${resolution}`)
+                        .then((response) => response.json())
+                        .then((data) => {
+                            loading.style.display = "none";
+                            legend.style.display = "block";
+
+                            _layers.forEach((layer) => map.removeLayer(layer));
+                            _sources.forEach((source) => map.removeSource(source));
+                            _layers = [];
+                            _sources = [];
+
+                            const sourcePrefix = "driver-locations";
+                            const maxCount = data.MaxCount;
+
+                            // Update chroma boundaries
+                            _chroma = _chroma.domain([0, Math.log(maxCount)]);
+
+                            createLegend(data.HeatMap);
+
+                            for (const id in data.HeatMap) {
+                                const sourceId = `${sourcePrefix}-${id}`;
+                                const layer = map.getLayer(sourceId);
+                                if (layer) {
+                                    map.removeLayer(sourceId);
+                                }
+
+                                addMultiPolygonSource(map, sourceId, data.HeatMap[id])
+
+                                // Add a new layer to visualize the polygon.
+                                _layers.push(sourceId);
+                                map.addLayer({
+                                    'id': sourceId,
+                                    'type': 'fill',
+                                    'source': sourceId, // reference the data source
+                                    'layout': {},
+                                    'paint': {
+                                        'fill-color': getHeatMapLayerColor(id, maxCount), // blue color fill
+                                        'fill-opacity': 0.5
+                                    }
+                                });
+                            }
+                        });
                 }
             });
-
-        // Add a data source containing GeoJSON data.
-        const addMultiPolygonSource = (map, name, features) => {
-            const source = map.getSource(name);
-            if (source) {
-                map.removeSource(name);
-            }
-
-            const geoJson = {
-                'type': 'geojson',
-                'data': {
-                    'type': 'FeatureCollection',
-                    'features': [],
-                }
-            }
-
-            for (const key in features) {
-                const boundary = features[key].Boundary.map(f => [f.Lng, f.Lat])
-
-                geoJson.data.features.push({
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Polygon',
-                        'coordinates': [boundary]
-                    },
-                    'properties': {
-                        'name': key
-                    }
-                });
-            }
-
-            _sources.push(name);
-            return map.addSource(name, geoJson);
-        }
-
-        const createLegendItem = (count) => {
-            var legendItem = document.createElement("div");
-            var legendItemSpan = document.createElement("span");
-            legendItemSpan.style.backgroundColor = _chroma(Math.log(count)).alpha(0.5).css();
-            legendItem.appendChild(legendItemSpan);
-            legendItem.appendChild(document.createTextNode(count));
-            document.getElementById('legend').appendChild(legendItem)
-        }
-
-        const createLegend = (heatmap) => {
-            var legend = document.getElementById('legend');
-            legend.innerHTML = "";
-
-            var legendTitle = document.createElement("div");
-            var legendTitleText = document.createElement("strong");
-            legendTitleText.appendChild(document.createTextNode("Item count"));
-            legendTitle.appendChild(legendTitleText);
-            legend.appendChild(legendTitle);
-
-            const keys = Object.keys(heatmap);
-            const n = Math.trunc((keys.length) / 5);
-            let i = 0;
-            while (i < keys.length) {
-                createLegendItem(keys[i]);
-                i += n;
-            }
-            if ((i + 1 - n) < keys.length) {
-                createLegendItem(keys[keys.length - 1]);
-            }
-        }
-
-        const updateMap = (entity, resolution) => {
-            const legend = document.getElementById("legend");
-            const loading = document.getElementById("loading");
-            loading.style.display = "block";
-
-            fetch(`http://localhost:8000/${entity}/${resolution}`)
-                .then((response) => {
-                    loading.style.display = "none";
-                    legend.style.display = "block";
-
-                    _layers.forEach((layer) => map.removeLayer(layer));
-                    _sources.forEach((source) => map.removeSource(source));
-                    _layers = [];
-                    _sources = [];
-
-                    response.json().then((data) => {
-                        const sourcePrefix = "driver-locations";
-                        const maxCount = data.MaxCount;
-
-                        // Update chroma boundaries
-                        _chroma = _chroma.domain([0, Math.log(maxCount)]);
-
-                        createLegend(data.HeatMap);
-
-                        for (const id in data.HeatMap) {
-                            const sourceId = `${sourcePrefix}-${id}`;
-                            const layer = map.getLayer(sourceId);
-                            if (layer) {
-                                map.removeLayer(sourceId);
-                            }
-
-                            addMultiPolygonSource(map, sourceId, data.HeatMap[id])
-
-                            // Add a new layer to visualize the polygon.
-                            _layers.push(sourceId);
-                            map.addLayer({
-                                'id': sourceId,
-                                'type': 'fill',
-                                'source': sourceId, // reference the data source
-                                'layout': {},
-                                'paint': {
-                                    'fill-color': getHeatMapLayerColor(id, maxCount), // blue color fill
-                                    'fill-opacity': 0.5
-                                }
-                            });
-                        }
-                    });
-                })
-        }
     </script>
 </body>
 

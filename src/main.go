@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mvp-beebee-h3/src/config"
 	"mvp-beebee-h3/src/db"
 	"net/http"
 	"strconv"
@@ -49,6 +50,11 @@ func main() {
 
 	route.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
+	})
+
+	route.HandleFunc("/env", func(w http.ResponseWriter, r *http.Request) {
+		configs, _ := json.Marshal(config.GetConfigs())
+		w.Write(configs)
 	})
 
 	route.HandleFunc("/orders/:resolution", func(w http.ResponseWriter, r *http.Request) {
