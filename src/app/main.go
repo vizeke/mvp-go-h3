@@ -1,15 +1,15 @@
 package main
 
 import (
+	"drivers-location-h3/src/config"
+	"drivers-location-h3/src/info"
 	"fmt"
 	"log"
-	"mvp-beebee-h3/src/config"
-	"mvp-beebee-h3/src/info"
 	"net/http"
 	"time"
 
-	driver_server "mvp-beebee-h3/src/driver/server"
-	order_server "mvp-beebee-h3/src/order/server"
+	driver_server "drivers-location-h3/src/driver/server"
+	order_server "drivers-location-h3/src/order/server"
 
 	"github.com/labstack/echo"
 )

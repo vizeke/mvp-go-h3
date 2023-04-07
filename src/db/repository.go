@@ -2,12 +2,12 @@ package db
 
 import (
 	"database/sql"
+	"drivers-location-h3/src/config"
+	"drivers-location-h3/src/db/model"
+	"drivers-location-h3/src/domain"
 	"encoding/json"
 	"fmt"
 	"log"
-	"mvp-beebee-h3/src/config"
-	"mvp-beebee-h3/src/db/model"
-	"mvp-beebee-h3/src/domain"
 
 	_ "github.com/lib/pq"
 )

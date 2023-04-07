@@ -1,4 +1,4 @@
-module mvp-beebee-h3
+module drivers-location-h3
 
 go 1.19
 

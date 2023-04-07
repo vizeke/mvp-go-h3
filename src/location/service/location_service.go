@@ -1,7 +1,7 @@
 package service
 
 import (
-	"mvp-beebee-h3/src/domain"
+	"drivers-location-h3/src/domain"
 
 	"github.com/uber/h3-go/v4"
 )

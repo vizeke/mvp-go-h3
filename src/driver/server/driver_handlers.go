@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"mvp-beebee-h3/src/db"
-	"mvp-beebee-h3/src/domain"
-	"mvp-beebee-h3/src/location/service"
+	"drivers-location-h3/src/db"
+	"drivers-location-h3/src/domain"
+	"drivers-location-h3/src/location/service"
 	"net/http"
 	"strconv"
 
