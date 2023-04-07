@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"mvp-beebee-h3/src/config"
+	"mvp-beebee-h3/src/db/model"
+	"mvp-beebee-h3/src/domain"
 
 	_ "github.com/lib/pq"
 )
 
-func GetOrdersLocation() []Location {
+func GetOrdersLocation() []domain.Location {
 	db, err := sql.Open("postgres", config.GetDbConnection())
 	if err != nil {
 		log.Fatal(err)
@@ -29,9 +31,9 @@ func GetOrdersLocation() []Location {
 	}
 	defer rows.Close()
 
-	var locations []Location = make([]Location, 50)
+	var locations []domain.Location = make([]domain.Location, 50)
 	for rows.Next() {
-		var location Location
+		var location domain.Location
 		err := rows.Scan(&location.Id, &location.Latitude, &location.Longitude)
 		if err != nil {
 			fmt.Println(err)
@@ -41,7 +43,7 @@ func GetOrdersLocation() []Location {
 	return locations
 }
 
-func GetDriversCurrentPosition() []Location {
+func GetDriversCurrentPosition() []domain.Location {
 	db, err := sql.Open("postgres", config.GetDbConnection())
 	if err != nil {
 		log.Fatal(err)
@@ -58,9 +60,9 @@ func GetDriversCurrentPosition() []Location {
 	}
 	defer rows.Close()
 
-	var driverLocations []DriverLocation = make([]DriverLocation, 50)
+	var driverLocations []model.DriverLocation = make([]model.DriverLocation, 50)
 	for rows.Next() {
-		var driverLocation DriverLocation
+		var driverLocation model.DriverLocation
 		err := rows.Scan(
 			&driverLocation.Id,
 			&driverLocation.Name,
@@ -73,45 +75,17 @@ func GetDriversCurrentPosition() []Location {
 		driverLocations = append(driverLocations, driverLocation)
 	}
 
-	var locations []Location = make([]Location, 50)
+	var locations []domain.Location = make([]domain.Location, 50)
 	for _, v := range driverLocations {
 		if v.Position.Valid {
-			var p DriverPosition
+			var p model.DriverPosition
 			json.Unmarshal([]byte(v.Position.String), &p)
 			if p.Latitude == 0 {
 				continue
 			}
-			locations = append(locations, Location{Id: v.Id, Latitude: p.Latitude, Longitude: p.Longitude})
+			locations = append(locations, domain.Location{Id: v.Id, Latitude: p.Latitude, Longitude: p.Longitude})
 		}
 	}
 
 	return locations
-}
-
-type Location struct {
-	Id        int32
-	Latitude  float64
-	Longitude float64
-}
-
-type DriverLocation struct {
-	Id         int32
-	Name       string
-	Position   sql.NullString
-	LastUpdate sql.NullString
-	LatestPong sql.NullString
-}
-
-type DriverPosition struct {
-	Altitude           float64
-	Provider           string
-	Bearing            float64
-	LocationProvider   int32
-	Latitude           float64
-	Accuracy           float64
-	Time               uint64
-	Radius             float64
-	Speed              float64
-	Longitude          float64
-	IsFromMockProvider bool
 }

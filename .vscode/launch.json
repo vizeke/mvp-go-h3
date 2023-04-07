@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${cwd}/src/main.go"
+            "program": "${cwd}/src/app/main.go"
         }
     ]
 }
