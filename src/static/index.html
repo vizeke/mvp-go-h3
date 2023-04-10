@@ -25,10 +25,12 @@
         width: 100%;
       }
 
-      #loading {
-        position: absolute;
-        top: 50vh;
-        left: 50vw;
+      #legend div span {
+        border-radius: 50%;
+        display: inline-block;
+        height: 10px;
+        margin-right: 5px;
+        width: 10px;
       }
 
       /*Spinner*/
@@ -84,14 +86,6 @@
           opacity: 0;
         }
       }
-
-      #legend div span {
-        border-radius: 50%;
-        display: inline-block;
-        height: 10px;
-        margin-right: 5px;
-        width: 10px;
-      }
     </style>
   </header>
 
@@ -102,13 +96,21 @@
     >
       <h5>Drivers density</h5>
     </div>
-    <div id="loading" style="display: none">
+    <div
+      id="loading"
+      class="position-absolute top-50 start-50"
+      style="display: none"
+    >
       <div class="lds-ripple">
         <div></div>
         <div></div>
       </div>
     </div>
-    <div class="position-absolute rounded bottom-0 end-0 m-3 p-3 bg-light-subtle" style="display: none" id="legend"></div>
+    <div
+      id="legend"
+      class="position-absolute rounded bottom-0 end-0 m-3 p-3 bg-light-subtle"
+      style="display: none"
+    ></div>
     <div class="position-absolute top-0 start-0 m-3">
       <div class="row g-3 align-items-center">
         <div class="col-auto">
