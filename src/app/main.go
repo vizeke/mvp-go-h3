@@ -36,7 +36,7 @@ func setupServer() *http.Server {
 	driver_server.NewDriverHandler(e)
 	order_server.NewOrderHandler(e)
 
-	e.Static("/", "../static")
+	e.Static("/", "src/static")
 
 	return &http.Server{
 		Addr:           ":8000",
